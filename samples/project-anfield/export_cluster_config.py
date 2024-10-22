@@ -142,6 +142,7 @@ logger.setLevel(logging.DEBUG)  # Capture all levels
 # Console logging handler
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG if args.verbose else logging.INFO)
+logger.propagate = False
 
 # File logging handler
 file_handler = logging.FileHandler(args.log_file, mode='w')  # Ensure 'write' mode
@@ -151,6 +152,10 @@ file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 file_handler.setFormatter(formatter)
+
+# Clear all existing handlers before adding new ones
+if logger.hasHandlers():
+    logger.handlers.clear()
 
 # Clear existing handlers to avoid duplication
 if not logger.handlers:

@@ -105,7 +105,7 @@ from library import RestClient
 requests.packages.urllib3.disable_warnings()
 
 
-logger = logging.getLogger("import_app")
+
 
 # Fetch the Cluster credentials from config file.
 ERROR_LIST = []
@@ -135,28 +135,32 @@ parser.add_argument(
 args = parser.parse_args()
 config_file = args.config
 
+logger = logging.getLogger("export_app")
+logger.setLevel(logging.DEBUG)  # Capture all levels
 
 # Console logging handler
 console_handler = logging.StreamHandler()
-if args.verbose:
-    console_handler.setLevel(logging.DEBUG)
-else:
-    console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG if args.verbose else logging.INFO)
+logger.propagate = False
 
 # File logging handler
-file_handler = logging.FileHandler(args.log_file)
-file_handler.setLevel(logging.DEBUG)  # Capture all logs
+file_handler = logging.FileHandler(args.log_file, mode='w')  # Ensure 'write' mode
+file_handler.setLevel(logging.DEBUG)
 
-# Defining logging formatter whic will be used by both handlers
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Defining logging formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 file_handler.setFormatter(formatter)
 
-# Adding hadlers to the loggers
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
+# Clear all existing handlers before adding new ones
+if logger.hasHandlers():
+    logger.handlers.clear()
+
+# Clear existing handlers to avoid duplication
+if not logger.handlers:
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
 
 
 # Validate the configuration file content.

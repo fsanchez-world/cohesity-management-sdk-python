@@ -50,8 +50,6 @@ else:
 
 from configparser import NoSectionError, NoOptionError, MissingSectionHeaderError
 
-logger = logging.getLogger("export_app")
-
 # Fetch command line arguments.
 parser = argparse.ArgumentParser(
     description="Please provide export file location and filename"
@@ -138,27 +136,27 @@ except Exception as err:
     print("Authentication error occurred, error details: %s" % err)
     sys.exit(1)
 
+logger = logging.getLogger("export_app")
+logger.setLevel(logging.DEBUG)  # Capture all levels
+
 # Console logging handler
 console_handler = logging.StreamHandler()
-if args.verbose:
-    console_handler.setLevel(logging.DEBUG)
-else:
-    console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG if args.verbose else logging.INFO)
 
 # File logging handler
-file_handler = logging.FileHandler(args.log_file)
-file_handler.setLevel(logging.DEBUG)  # Capture all logs
+file_handler = logging.FileHandler(args.log_file, mode='w')  # Ensure 'write' mode
+file_handler.setLevel(logging.DEBUG)
 
-# Defining logging formatter whic will be used by both handlers
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Defining logging formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 file_handler.setFormatter(formatter)
 
-# Adding hadlers to the loggers
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
+# Clear existing handlers to avoid duplication
+if not logger.handlers:
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
 
 # Starting the export process
 logger.info(
@@ -169,11 +167,11 @@ logger.info(
 try:
     # Skip paused jobs and failover ready jobs by setting this flag to true
     # in config file.
-    logging.info("Preparing boolean value to determine if jobs must be skipped.")
+    logger.info("Preparing boolean value to determine if jobs must be skipped.")
     skip_jobs = configparser.getboolean("export_cluster_config", "skip_jobs")
     logger.debug("skip_jobs value: %s", skip_jobs)
 
-    logging.info("Preparing boolean value to determine if access management should be exported.")
+    logger.info("Preparing boolean value to determine if access management should be exported.")
     export_access_mgmnt = configparser.getboolean(
         "export_cluster_config", "export_access_management"
     )
@@ -238,16 +236,16 @@ host_mappings_info = library.get_host_mapping(cohesity_client)
 
 # Export Active directory entries and AD users and groups along with roles.
 if export_access_mgmnt:
-    logging.info("Access management boolean is set to TRUE, exporting corresponding settings.")
-    logging.debug("Calling library function to pull AD info.")
-    logging.debug("Iterating every AD configuration to get a list of domains.")
+    logger.info("Access management boolean is set to TRUE, exporting corresponding settings.")
+    logger.debug("Calling library function to pull AD info.")
+    logger.debug("Iterating every AD configuration to get a list of domains.")
     ad_info = library.get_ad_entries(cohesity_client)
     domains = [ad.domain_name for ad in ad_info]
-    logging.debug("Domains found: %s.", domains)
-    logging.info("Calling library function to pull AD Objects info.")
+    logger.debug("Domains found: %s.", domains)
+    logger.info("Calling library function to pull AD Objects info.")
     ad_objects_info = library.get_ad_objects(
         cohesity_client, domains)
-    logging.info("Calling library function to pull roles info.")
+    logger.info("Calling library function to pull roles info.")
     roles_info = cohesity_client.roles.get_roles()
 
 logger.info("Adding all information collected into a cluster dictionary object.")
